@@ -8,6 +8,7 @@ The purpose of this repository is to provide a software platform for analysis of
 
 Before running any analysis, first do:
 >source setup_gmna.sh
+
 This will set the appropriate environment variables. Note that some retooling of these paths WILL be necessary for each user's environment.
 
 It should be noted also that this platform is still under construction!
