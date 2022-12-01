@@ -23,9 +23,11 @@ Directory and subdirectory descriptions follow:
 - oldCode: Contains several iterative versions of the two remaining scripts which are used. These versions contain scripts which are used during active improvement of the working scripts.
 - pelas.C: This script places wide cuts on all current-pass replays of each kinematic passed by the user and returns a root file parsed in both events and structure. It should be noted that this script must be run by the analyzer, not by native root to accomodate THaRun libraries. Usage:
 >analyzer -l 'pelas.C(<kinematic>)'
+
 Here, kinematic refers to any of the nominal kinematics in GMn. So, kinematic = { 4, 7, 8, 9, 11, 14 }.
 - pelas_sh.C: This script places only global cuts on elastics over all events and returns the same tree parsed only by events. This may be run with the analyzer or by native root. Usage:
 >root -l 'pelas_sh.C(<kinematic>)'
+
 Here, kinematic refers to any of the nominal kinematics in GMn. So, kinematic = { 4, 7, 8, 9, 11, 14 }
 ## hcal
 - hcal_det_eff: This directory contains scripts to evaluate the proton and neutron detection efficiency of hcal. Instructions for these scripts forthcoming..
