@@ -11,7 +11,8 @@ echo "\n"
 setenv CONFIG_DIR /w/halla-scshelf2102/sbs/seeds/gmn_analysis/gmna/include/config
 setenv GMN_DATA_DIR /w/halla-scshelf2102/sbs/sbs-gmn
 setenv PARSE_OUTPUT_DIR /lustre19/expphy/volatile/halla/sbs/seeds/parse
+setenv GMN_OUTPUT_DIR /lustre19/expphy/volatile/halla/sbs/seeds/gmn_analysis
 
 #Include path to header files
-#setenv PATH /w/halla-scshelf2102/sbs/seeds/gmn_analysis/gmna/include:${PATH}
+setenv PATH /w/halla-scshelf2102/sbs/seeds/gmn_analysis/gmna/include:/w/halla-scshelf2102/sbs/seeds/gmn_analysis/gmna/physics:${PATH}
 #setenv LD_LIBRARY_PATH /w/halla-scshelf2102/sbs/seeds/gmn_analysis/gmna/include:${LD_LIBRARY_PATH}

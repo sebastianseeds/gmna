@@ -1,5 +1,5 @@
-#ifndef PELAS_SH_H
-#define PELAS_SH_H
+#ifndef PARSE_H
+#define PARSE_H
 
 // Declaration of leaf types for chain (from MakeClass())
 Double_t        C_targx;
@@ -4375,4 +4375,4 @@ void ChainInit(TChain *fChain)
 }
 
 
-#endif // PELAS_SH_H
+#endif // PARSE_H

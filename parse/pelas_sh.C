@@ -1,5 +1,4 @@
 //SSeeds 11.30.22 - Post-production - Code to parse several runs back by making only global cuts on elastics and produce a single root file for further analysis preserving the original tree structure. 
-
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -37,8 +36,7 @@
 #include "TLatex.h"
 #include "TCanvas.h"
 #include "TTreeFormula.h"
-#include "pelas_sh.h"
-
+#include "../include/parse.h"
 #include "../include/gmna.h"
 //#include "../include/R.h"
 //#include "../include/R.C"
@@ -95,7 +93,7 @@ vector<Double_t> getDBParam( string file="", string param="", Int_t skip_lines =
   return vec;
 }
 
-void pelas_sh( Int_t kine=-1 ){
+void pelas_sh( Int_t kine=-1, const char *tar="", Int_t mag=-1 ){
 
   // Define a clock to check macro processing time
   TStopwatch *st = new TStopwatch();
@@ -109,20 +107,25 @@ void pelas_sh( Int_t kine=-1 ){
 
   if( kine==-1 ){
     cout << "Error: Input parameters out of bounds. Please execute with the format:" << endl;
-    cout << "  root -l \"pelas.C( <kine> )\" " << endl;
+    cout << "  root -l \"pelas.C( <kine>, <tar>, <mag> )\" " << endl;
     cout << "  ..where kine = { 4, 7, 8, 9, 11, 14 }" << endl;
+    cout << "  ..where tar = { \"LH2\", \"LD2\" }" << endl;
+    cout << "  ..where mag = { 0, 30, 50, 70, 85, 100 }" << endl;
     return;
   }
 
   // Get configuration file
   const char *config_prefix = gSystem->Getenv("CONFIG_DIR");
-  TString configfilename = Form( "%s/parse_conf/SBS%d/sbs%d-parse.cfg", config_prefix, kine, kine );
+  //TString configfilename = Form( "%s/parse_conf/SBS%d/sbs%d-parse.cfg", config_prefix, kine, kine );
+  TString configfilename = Form( "%s/parse_conf/SBS%d/%s/mag%d/sbs%d%s%dpar.cfg", config_prefix, kine, tar, mag, kine, tar, mag );
   
   //cout << configfilename << endl;
 
   // Declare output file
   const char *output_prefix = gSystem->Getenv("PARSE_OUTPUT_DIR");
-  TString outputfilename = Form("%s/gmn_parsed_short_SBS%d.root", output_prefix, kine );
+  TString outputfilename = Form("%s/gmn_parsed_fulltree_SBS%d_%s_mag%d.root", output_prefix, kine, tar, mag );
+
+  //cout << outputfilename << endl;
 
   // Declare general physics parameters to be modified by input config file
   Double_t E_e = -1.; // Energy of beam (incoming electrons from accelerator)
@@ -317,7 +320,7 @@ void pelas_sh( Int_t kine=-1 ){
     }
   }
 
-  cout << endl << "Database parameters loaded." << endl << endl;
+  cout << endl << "Database parameters loaded." << endl;
 
   // Declare outfile
   //outputfilename = "Test.root";
@@ -338,9 +341,7 @@ void pelas_sh( Int_t kine=-1 ){
     h_BBCalSh_ADCg[i] = new TH2D(Form("h_BBCalSh_ADCg_set%d",i),"BBCal Shower ADC Gain Coefficients; Run Number; GeV/pC", maxBBCalShChan, 0, maxBBCalShChan, 1000, 0, 0.01 ); 
   }
 
-
   //Write DB parameters to histos
-  cout << endl << endl << "Test offsets: " << endl << endl;
   cout << endl << "HCal ADC gain parameters:" << endl << endl;
 
   //cout << "HCal ADC gain coefficents from start of experiment:" << endl;
@@ -394,6 +395,9 @@ void pelas_sh( Int_t kine=-1 ){
   // Create output tree
   TTree *R = new TTree("R","Replicated tree with global cuts."); 
 
+  gROOT->ProcessLine( "gErrorIgnoreLevel = 6001" );
+  gROOT->ProcessLine( "gPrintViaErrorHandler = kTRUE " );
+
   ChainInit(C);
   CloneInit(R);
 
@@ -417,10 +421,11 @@ void pelas_sh( Int_t kine=-1 ){
   Int_t globalpass = 0;
   Int_t treenum = 0, currenttreenum = 0;
  
-  
+  cout << endl << "All experimental parameters loaded. Proceeding to loop over events." << endl << endl;
+
   for(Long64_t nevent = 0; nevent<Nevents; nevent++){
 
-    if( nevent%10 == 0 ) cout << "Loop: " << nevent << "/" << Nevents << ". \r";
+    if( nevent%10 == 0 ) cout << "Loop: " << nevent << "/" << Nevents << ". Total before globalcut: " << NTevents << ". \r";
     cout.flush();
 
     //Get each event for analysis

@@ -843,8 +843,9 @@ void pelas( Int_t kine=-1 ){
     }
 
     DumEvLast = Sevnum;
-    clkLast = Sclk/103700;
-    chargeLast = Sdnew/3318;
+    clkLast = Sclk/103700; //Sclk
+
+    chargeLast = Sdnew/3318; //Get rate (Sdnew/3318/clkLast) then multiply by the time (clkLast), without the offset, 3318 is cnts/C
 
     //Fill the scalar data structure with charge and clock corrections applied
     SCALARAGG thisSCALAR = { Srunnum, Sevnum+DumEvOff+evTCoff, Sdnew/3318, Sclk/103700+clkOff+clkTCoff };
