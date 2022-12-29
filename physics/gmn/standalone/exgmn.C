@@ -1,4 +1,4 @@
-//SSeeds 4.1.22 - Post-production - Analysis code to extract first-order gmn from cross section ratio via LD2 data
+//SSeeds 12.7.22 - Post-production - Analysis code to extract first-order gmn from cross section ratio via LD2 data. Updated fits.
 
 #include <ctime>
 #include <iostream>
@@ -61,9 +61,8 @@ const double uwallthick_LH2 = 0.0145; //cm
 const double dwallthick_LH2 = 0.015; //cm
 const double cellthick_LH2 = 0.02; //cm, this is a guess;
 const double Alshieldthick = 2.54/8.0; //= 1/8 inch * 2.54 cm/inch  
-
-//Number of peaks for LD2
-const int npeaks = 2;
+const double dxlim_l = 4.0;
+const double dxlim_u = 3.0;
 
 // Get today's date
 string getDate(){
@@ -78,78 +77,43 @@ string getDate(){
   return date;
 }
 
-// Selective gaussian to subract inelastic background 30% SBS field
+// Gaussian fit to background
 /*
-double BG_fit_30(double *x, double *par){
+double BGfit(double *x, double *par){
   double amp = par[0];
   double offset = par[1];
   double sigma = par[2];
-  if (x[0]>-1.2 && x[0]<0.48) { 
-    TF1::RejectPoint();
-    return 0;
-  }
-  cout << "Fitting BG with gaussian.." << endl;
   return amp*exp(-0.5*pow((x[0]-offset)/sigma,2.));
 }
+*/
+// Polynomial fit to background
 
-// Selective second order polynomial to subract inelastic background 30% SBS field
-/*
-double BG_fit_30(double *x, double *par){
+double BGfit(double *x, double *par){
   double yint = par[0];
   double p1 = par[1];
   double p2 = par[2];
-  if (x[0]>-1.2 && x[0]<0.48) { 
-    TF1::RejectPoint();
-    return 0;
-  }
-  cout << "Fitting BG with second order polynomial.." << endl;
-  return yint + p1*x[0] + p2*pow(x[0],2);
+  return yint+p1*x[0]+p2*pow(x[0],2);
 }
-*/
-// Selective gaussian to subract inelastic background 50% SBS field
-/*
-double BG_fit_50(double *x, double *par){
+
+double Pfit(double *x, double *par){
   double amp = par[0];
   double offset = par[1];
   double sigma = par[2];
-  if (x[0]>-1.77 && x[0]<0.51){
-    TF1::RejectPoint();
-    return 0;
-  }
-  cout << "Fitting BG with gaussian.." << endl;
   return amp*exp(-0.5*pow((x[0]-offset)/sigma,2.));
 }
-*/
-// Selective second order polynomial to subract inelastic background 50% SBS field
-/*
-double BG_fit_50(double *x, double *par){
-  double yint = par[0];
-  double p1 = par[1];
-  double p2 = par[2];
-  if (x[0]>-1.77 && x[0]<0.51) { 
-    TF1::RejectPoint();
-    return 0;
-  }
-  cout << "Fitting BG with second order polynomial.." << endl;
-  return yint + p1*x[0] + p2*pow(x[0],2);
-}
-*/
-//Alternative fitting method
-double fpeaks(double *x, double*par){
-  double result = par[0]+par[1]*x[0];
-  for(int p=0; p<npeaks; p++){
-    double norm = par[3*p+2];
-    double mean = par[3*p+3];
-    double sig = par[3*p+4];
-    norm /= sig*TMath::Sqrt(2*PI);
-  }
-  result += norm*TMath::Gaus(x[0],mean,sig);
+
+double Nfit(double *x, double *par){
+  double amp = par[0];
+  double offset = par[1];
+  double sigma = par[2];
+  return amp*exp(-0.5*pow((x[0]-offset)/sigma,2.));
 }
 
+double Tfit(double *x, double *par){
+  return BGfit(x,&par[0])+Pfit(x,&par[3])+Nfit(x,&par[6]);
+}
 
-
-
-void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", const char *outputfilename="outfiles/gmn_out.root" ){
+void exgmn( const char *configfilename="setup_extract_gmn_SBS9.cfg", const char *outputfilename="outfiles/gmn_out.root" ){
   
   // Define a clock to check macro processing time
   TStopwatch *st = new TStopwatch();
@@ -162,25 +126,25 @@ void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", cons
   TChain *C = new TChain("R");
 
   // Declare general physics parameters to be modified by input config file
-  int kine = 8; // Keep track of kinematic being analyzed
-  double E_e = 1.916; // Energy of beam (incoming electrons from accelerator)
-  double BB_d = 1.7988; // Distance to bigbite spectrometer from target chamber (m)
-  double BB_th = 36.; // Angle BB spectrometer makes with exit beamline
-  double HCal_d = 14.5; // Distance to HCal from scattering chamber for comm1
-  double HCal_th = 35.; // Angle HCal center makes with exit beamline  
-  double W_mean = 0.93; // Mean of W at current kinematic
-  double W_sig = 0.039; // Width of W at current kinematic
-  double dx0_n = 0.9; // Position of neutron spot, x-x_expected
-  double dy0_n = 0.62; // Position of neutron spot, y-y_expected
-  double dx_sig_n = 0.09; // Max spread of neutron spot, x-x_expected
-  double dy_sig_n = 0.15; // Max spread of neutron spot, y-y_expected
-  double dx0_p = 0.9; // Position of proton spot, x-x_expected
-  double dy0_p = 0.62; // Position of proton spot, y-y_expected
-  double dx_sig_p = 0.09; // Max spread of proton spot, x-x_expected
-  double dy_sig_p = 0.15; // Max spread of proton spot, y-y_expected
-  double dx_max = 0.65; // Max distance expected for p-n separation
-  int magSet = 30;  // SBS Magnetic field strength (percent)
-  int useAlshield = 0; //Use 1/8" aluminum shield on scattering chamber exit?
+  int kine = -1000; // Keep track of kinematic being analyzed
+  double E_e = -1000; // Energy of beam (incoming electrons from accelerator)
+  double BB_d = -1000; // Distance to bigbite spectrometer from target chamber (m)
+  double BB_th = -1000; // Angle BB spectrometer makes with exit beamline
+  double HCal_d = -1000; // Distance to HCal from scattering chamber for comm1
+  double HCal_th = -1000; // Angle HCal center makes with exit beamline  
+  double W_mean = -1000; // Mean of W at current kinematic
+  double W_sig = -1000; // Width of W at current kinematic
+  double dx0_n = -1000; // Position of neutron spot, x-x_expected
+  double dy0_n = -1000; // Position of neutron spot, y-y_expected
+  double dx_sig_n = -1000; // Max spread of neutron spot, x-x_expected
+  double dy_sig_n = -1000; // Max spread of neutron spot, y-y_expected
+  double dx0_p = -1000; // Position of proton spot, x-x_expected
+  double dy0_p = -1000; // Position of proton spot, y-y_expected
+  double dx_sig_p = -1000; // Max spread of proton spot, x-x_expected
+  double dy_sig_p = -1000; // Max spread of proton spot, y-y_expected
+  double dx_max = -1000; // Max distance expected for p-n separation
+  int magSet = -1000;  // SBS Magnetic field strength (percent)
+  int useAlshield = -1000; //Use 1/8" aluminum shield on scattering chamber exit?
 
   // Reading config file
   ifstream configfile(configfilename);
@@ -301,6 +265,30 @@ void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", cons
     delete tokens;
   }
   
+  if( kine == -1000 ||
+      E_e == -1000 || 
+      BB_d == -1000 ||
+      BB_th == -1000 ||
+      HCal_d == -1000 ||
+      HCal_th == -1000 ||
+      W_mean == -1000 ||
+      W_sig == -1000 ||
+      dx0_n == -1000 ||
+      dy0_n == -1000 ||
+      dx_sig_n == -1000 ||
+      dy_sig_n == -1000 ||
+      dx0_p == -1000 ||
+      dy0_p == -1000 ||
+      dx_sig_p == -1000 ||
+      dy_sig_p == -1000 ||
+      dx_max == -1000 ||
+      magSet == -1000 ||
+      useAlshield == -1000 ){
+    cout << "Error: Setup parameters not fully loaded. Check config file." << endl;
+    return;
+  }
+
+
   cout << "Setup parameters loaded." << endl;
 
   TEventList *elist = new TEventList("elist","Elastic Event List");
@@ -399,12 +387,8 @@ void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", cons
   sw->Start();
   
   // Declare outfile
-  outputfilename = Form("outfiles/gmn_out_SBS%d_mag%d.root",kine,magSet);
+  outputfilename = Form("outfiles/exgmn_out_SBS%d_mag%d.root",kine,magSet);
 
-  //if( magSet==30 ) outputfilename = "outfiles/gmn_out_SBS30.root";
-  //if( magSet==50 ) outputfilename = "outfiles/gmn_out_SBS50.root";
-  //if( magSet==70 ) outputfilename = "outfiles/gmn_out_SBS70.root";
-  //if( magSet==100 ) outputfilename = "outfiles/gmn_out_SBS100.root";
   TFile *fout = new TFile( outputfilename, "RECREATE" );
 
   // Initialize misc. variables
@@ -436,18 +420,18 @@ void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", cons
   hE_pp->GetXaxis()->SetTitle( "GeV" );
   TH1D *hKE_p = new TH1D( "Scattered Proton Kinetic Energy", "KE_pp", 500, 0.0, E_e*1.5 );
   hKE_p->GetXaxis()->SetTitle( "GeV" );
-  TH1D *hdx_HCAL = new TH1D("hdx_HCAL","; x_{HCAL} - x_{exp} (m);", 250, -2.5,2.5);
-  TH1D *hdx_HCAL_cut = new TH1D("hdx_HCAL_cut","; x_{HCAL} - x_{exp} (m);", 250, -2.5,2.5);
-  TH1D *hdx_HCAL_wcut = new TH1D("hdx_HCAL_wcut","; x_{HCAL} - x_{exp} (m);", 250, -2.5,2.5);
-  TH1D *hdx_HCAL_fcut = new TH1D("hdx_HCAL_fcut","; x_{HCAL} - x_{exp} (m);", 250, -2.5,2.5);
+  TH1D *hdx_HCAL = new TH1D("hdx_HCAL","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
+  TH1D *hdx_HCAL_cut = new TH1D("hdx_HCAL_cut","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
+  TH1D *hdx_HCAL_wcut = new TH1D("hdx_HCAL_wcut","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
+  TH1D *hdx_HCAL_fcut = new TH1D("hdx_HCAL_fcut","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
   TH1D *hdy_HCAL = new TH1D("hdy_HCAL","; y_{HCAL} - y_{exp} (m);", 250, -1.25,1.25);
   TH1D *hdy_HCAL_cut = new TH1D("hdy_HCAL_cut","; y_{HCAL} - y_{exp} (m);", 250, -1.25,1.25);  
-  TH2D *hdxdy_HCAL = new TH2D("hdxdy_HCAL",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -2.5, 2.5 );
-  TH2D *hdxdy_HCAL_wcut = new TH2D("hdxdy_HCAL_wcut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -2.5, 2.5 );
-  TH2D *hdxdy_HCAL_cut = new TH2D("hdxdy_HCAL_cut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -2.5, 2.5 );
-  TH2D *hdxdy_HCAL_ncut = new TH2D("hdxdy_HCAL_ncut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -2.5, 2.5 );
-  TH2D *hdxdy_HCAL_pcut = new TH2D("hdxdy_HCAL_pcut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -2.5, 2.5 );
-  TH2D *hdxdy_HCAL_fcut = new TH2D("hdxdy_HCAL_fcut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -2.5, 2.5 );
+  TH2D *hdxdy_HCAL = new TH2D("hdxdy_HCAL",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -dxlim_l, dxlim_u );
+  TH2D *hdxdy_HCAL_wcut = new TH2D("hdxdy_HCAL_wcut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -dxlim_l, dxlim_u );
+  TH2D *hdxdy_HCAL_cut = new TH2D("hdxdy_HCAL_cut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -dxlim_l, dxlim_u );
+  TH2D *hdxdy_HCAL_ncut = new TH2D("hdxdy_HCAL_ncut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -dxlim_l, dxlim_u );
+  TH2D *hdxdy_HCAL_pcut = new TH2D("hdxdy_HCAL_pcut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -dxlim_l, dxlim_u );
+  TH2D *hdxdy_HCAL_fcut = new TH2D("hdxdy_HCAL_fcut",";y_{HCAL}-y_{expect} (m); x_{HCAL}-x_{expect} (m)", 250, -1.25, 1.25, 250, -dxlim_l, dxlim_u );
   TH2D *hxy_HCAL = new TH2D("hxy_HCAL",";y_{HCAL} (m); x_{HCAL} (m)",12,-0.9,0.9,24,-2.165,1.435);
   TH2D *hxy_HCAL_cut = new TH2D("hxy_HCAL_cut",";y_{HCAL} (m); x_{HCAL} (m)",12,-0.9,0.9,24,-2.165,1.435);
   TH2D *hxy_HCAL_cut_p = new TH2D("hxy_HCAL_cut_p",";y_{HCAL} (m); x_{HCAL} (m)",12,-0.9,0.9,24,-2.165,1.435);
@@ -651,7 +635,7 @@ void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", cons
   cout << endl;
 
   //Declare canvas
-  TCanvas *c1 = new TCanvas("c1","c1",1600,1200);
+  TCanvas *c1 = new TCanvas("c1","c1",1600,1000);
   c1->Divide(2,1);
 
   //Write p-n distribution with spot cuts visualized
@@ -673,141 +657,168 @@ void exgmn_altfit( const char *configfilename="setup_extract_gmn_SBS8.cfg", cons
 
   //Write dx fit with visualization
   c1->cd(2);
-  gStyle->SetOptFit(1111);
+  gStyle->SetOptFit(0);
+  gStyle->SetOptStat(0);
 
-
+  //Assuming LD2 for these fits..
+  Double_t setpar[9];
+  Double_t fitr_l, fitr_h;
+  TH1D *hdx_clone = (TH1D*)hdx_HCAL->Clone("hdx_clone");
+  Double_t maxpest = 0.8*hdx_clone->GetMaximum();
+  Double_t maxnest = 0.6*maxpest;
+  Double_t fgmin = 0.0;
+  Double_t fgmax = 9000;
+  
+  if( kine==4 ){
+    setpar[0] = 100;
+    setpar[1] = -0.4;
+    setpar[2] = 0.6;
+    setpar[3] = 5000;
+    setpar[4] = -0.6412;
+    setpar[5] = 0.5;
+    setpar[6] = 1700;
+    setpar[7] = 0.0;
+    setpar[8] = 0.3;
+    fitr_l = -1.5;
+    fitr_h = 0.7;
+  }else if( kine==8 ){
+    setpar[0] = 500;
+    setpar[1] = -100;
+    setpar[2] = -100;
+    setpar[3] = 8672;
+    setpar[4] = -0.777;
+    //setpar[4] = -0.808;
+    setpar[5] = 0.157;
+    setpar[6] = 2997;
+    //setpar[7] = 0.0709;
+    setpar[7] = 0.0788;
+    setpar[8] = 0.204;
+    fitr_l = -2.0;
+    fitr_h = 0.8;
+  }else if( kine==9 ){
+    setpar[0] = 200;
+    setpar[1] = -100;
+    setpar[2] = -100;
+    setpar[3] = 2800;
+    setpar[4] = -0.8196;
+    setpar[5] = 0.163;
+    setpar[6] = 1150;
+    setpar[7] = 0.07154;
+    setpar[8] = 0.158;
+    fitr_l = -2.2;
+    fitr_h = 0.9;
+  }else{
+    cout << "Warning: expected fit parameters (and likely set parameters) not yet configured. Output results likely to be nonsense." << endl;
+  }
   /*
-  //Fit dxdy histograms and extract xsig/ysig
-  double p_low, p_hi, p_par[3];
-  double n_low, n_hi, n_par[3];
-  double bg_par[3];
-
-  //defining fit parameters and range
-  if( magSet==30 ){
-    p_low = -1.13;
-    p_hi = -0.2;
-    n_low = -0.2;
-    n_hi = 0.41;
-    p_par[0] = 1967;
-    p_par[1] = -0.58;
-    p_par[2] = 0.16;
-    n_par[0] = 662;
-    n_par[1] = -0.047;
-    n_par[2] = 0.184;
-    bg_par[0] = 480;
-    bg_par[1] = -0.3; 
-    bg_par[2] = 0.5;
-  }else{
-    //if( magSet==50 ){
-    p_low=-1.4;
-    p_hi=-0.78;
-    n_low=-0.22;
-    n_hi=0.26;
-    p_par[0]=475;
-    p_par[1]=-1.09;
-    p_par[2]=0.184;
-    n_par[0]=182;
-    n_par[1]=0.009;
-    n_par[2]=0.169;
-    bg_par[0]=160;
-    bg_par[1]=-0.42;
-    bg_par[2]=0.7;
-  }
-  
-  double par[9];
-  TF1 *fitBG;
-  
-  if( magSet==30 ){
-    fitBG = new TF1( "fitBG", BG_fit_30, -2.5, 2.5, 3 );
-    //}else if( magSet==50){
-  }else{
-    fitBG = new TF1( "fitBG", BG_fit_50, -2.5, 2.5, 3 );
-    //}else{
-    //cout << "ERROR: Poorly defined SBS field strength (not defined in code)." << endl;
-    //return 1;
-  }
-  
-  fitBG->SetParameters(bg_par[0],bg_par[1],bg_par[2]);
-  fitBG->SetLineColor(16);
-  hdx_HCAL_fcut->Fit(fitBG,"QNR");
-  fitBG->GetParameters(&par[0]);
-
-  TF1 *fitP = new TF1("fitP", "gaus", p_low, p_hi);
-  fitP->SetParameters(p_par[0],p_par[1],p_par[2]);
-  fitP->SetLineColor(2);
-  hdx_HCAL_fcut->Fit(fitP,"QNR+");
-  fitP->GetParameters(&par[3]);
-
-  TF1 *fitN = new TF1("fitN", "gaus", n_low, n_hi);
-  fitN->SetParameters(n_par[0],n_par[1],n_par[2]);
-  fitN->SetLineColor(4);
-  hdx_HCAL_fcut->Fit(fitN,"QNR+");
-  fitN->GetParameters(&par[6]);
-
-  double parAll[9];
-  TF1 *fitAll = new TF1("fitAll","gaus(0)+gaus(3)+gaus(6)",-2.5,2.5);
-  fitAll->SetLineColor(3); 
-  fitAll->SetLineWidth(2);
-  fitAll->SetParameters(par);
-  hdx_HCAL_fcut->Fit(fitAll,"QR+");
-  fitAll->GetParameters(parAll);
-
-  //Extract GMn
-  double UB_n_tot, UB_p_tot, n_tot, p_tot;
-  TF1 *isolBG = new TF1("isolBG","gaus",-2.5,2.5);
-  isolBG->SetLineWidth(1);
-  isolBG->SetLineColor(15);
-  isolBG->SetParameters(&par[0]);
-  isolBG->Draw("same");
-  TF1 *isolP = new TF1("isolP","gaus",-2.5,2.5);
-  isolP->SetLineWidth(1);
-  isolP->SetLineColor(kRed);
-  isolP->SetParameters(&par[3]);
-  isolP->Draw("same");
-  TF1 *isolN = new TF1("isolP","gaus",-2.5,2.5);
-  isolN->SetLineWidth(1);
-  isolN->SetLineColor(kBlue);
-  isolN->SetParameters(&par[6]);
-  isolN->Draw("same");
+  cout << maxpest << endl;
+  cout << dx0_p << endl;
+  cout << dx_sig_p << endl;
+  cout << maxnest << endl;
+  cout << dx0_n << endl;
+  cout << dx_sig_n << endl;
+  cout << dx0_p-3*dx_sig_p << endl;
+  cout << dx0_n+3*dx_sig_n << endl;
   */
 
-  //Alternative fit method
-  TCanvas *a1 = new TCanvas("a1","a1",10,10,1000,900);
-  a1->Divide(1,2);
-  a1->cd(1);
-
-  hdx_HCAL_fcut->Draw();
-  TH1D *hdx_clone = (TH1D*)hdx_HCAL_fcut->Clone("hdx_clone");
-
-  TSpectrum *s = new TSpectrum(2*npeaks);
-  int nfound = s->Search(hdx_HCAL_fcut,2,"",0.10);
-  cout << "found " << nfound << " peaks.." << endl;
+  /*
+  setpar[0] = 100;
+  setpar[1] = -0.4;
+  setpar[2] = 0.6;
+  setpar[3] = maxpest;
+  setpar[4] = dx0_p;
+  setpar[5] = dx_sig_p;
+  setpar[6] = maxnest;
+  setpar[7] = dx0_n;
+  setpar[8] = dx_sig_n;
+  fitr_l = dx0_p-2*dx_sig_p;
+  fitr_h = dx0_n+2*dx_sig_n;
+  */
+  c1->cd(2);
   
-  TH1 *hb = s->Background(h,20,"same");
-  if(hb) a1->Update();
-  
-  a1->cd(2);
-  TF1->*fline = new TF1("fline","pol1",-2,2);
+  TF1 *totalfit = new TF1("totalfit",Tfit,fitr_l,fitr_h,9);
 
+  totalfit->SetLineWidth(4);
+  totalfit->SetLineColor(kMagenta);
+  totalfit->SetParameter(0,setpar[0]);
+  totalfit->SetParLimits(0,150,900);
+  totalfit->SetParameter(1,setpar[1]);
+  //totalfit->SetParLimits(1,-150,0);
+  totalfit->SetParameter(2,setpar[2]);
+  totalfit->SetParameter(3,setpar[3]);
+  totalfit->FixParameter(4,setpar[4]); //Fix the mean to avoid fitting radiative tail
+  totalfit->SetParameter(5,setpar[5]);
+  totalfit->SetParameter(6,setpar[6]);
+  totalfit->FixParameter(7,setpar[7]); //Fix the mean
+  totalfit->SetParameter(8,setpar[8]);
+  /*
+  totalfit->SetParameter(3,setpar[3]);
+  totalfit->SetParLimits(3,fgmin,fgmax);
+  totalfit->SetParameter(4,setpar[4]);
+  totalfit->SetParameter(5,setpar[5]);
+  totalfit->SetParameter(6,setpar[6]);
+  totalfit->SetParLimits(6,fgmin,fgmax);
+  totalfit->SetParameter(7,setpar[7]);
+  totalfit->SetParameter(8,setpar[8]);
+  */
+  //hdx_clone->Fit("totalfit","V+","ep");
+  hdx_clone->Fit("totalfit","QRB+");
+
+  TF1 *bg = new TF1("bg",BGfit,fitr_l, fitr_h,3);
+  bg->SetLineColor(kBlack);
+  TF1 *p = new TF1("p",Pfit,fitr_l, fitr_h,3);
+  p->SetLineColor(kRed);
+  //p->SetNpx(500);
+  TF1 *n = new TF1("n",Nfit,fitr_l, fitr_h,3);
+  n->SetLineColor(kBlue);
+  //n->SetNpx(500);
+
+  Double_t tpar[9];
+  totalfit->GetParameters(tpar);
+
+  cout << endl << endl;
+  cout << tpar[0] << endl;
+  cout << tpar[1] << endl;
+  cout << tpar[2] << endl;
+  cout << tpar[3] << endl;
+  cout << tpar[4] << endl;
+  cout << tpar[5] << endl;
+  cout << tpar[6] << endl;
+  cout << tpar[7] << endl;
+  cout << tpar[8] << endl;
+  cout << fitr_l << endl;
+  cout << fitr_h << endl;
+
+  bg->SetParameters(&tpar[0]);
+  bg->Draw("same");
+
+  p->SetParameters(&tpar[3]);
+  p->Draw("same");
+
+  n->SetParameters(&tpar[6]);
+  n->Draw("same");
 
   //Blind the yields
-  UB_p_tot = isolP->Integral(-2.5,2.5)/hdx_HCAL_fcut->GetBinWidth(1);
-  UB_n_tot = isolN->Integral(-2.5,2.5)/hdx_HCAL_fcut->GetBinWidth(1);
-  p_tot = blind( UB_p_tot );
-  n_tot = blind( UB_n_tot );
+  double UB_p_tot = p->Integral(-dxlim_l,dxlim_u)/hdx_clone->GetBinWidth(1);
+  double UB_n_tot = n->Integral(-dxlim_l,dxlim_u)/hdx_clone->GetBinWidth(1);
+  double p_tot = blind( UB_p_tot );
+  double n_tot = blind( UB_n_tot );
 
   //Add a legend
+  
   auto legend = new TLegend(0.1,0.7,0.48,0.9);
   legend->SetTextSize(0.03);
-  legend->AddEntry(isolBG,"Background Fit","l");
-  legend->AddEntry(isolP,Form("Proton Fit, Yield: %f", p_tot),"l");
-  legend->AddEntry(isolN,Form("Neutron Fit, Yield: %f", n_tot),"l");
-  legend->AddEntry(fitAll,"Total Fit","l");
+  legend->AddEntry(bg,"Background Fit","l");
+  legend->AddEntry(p,Form("Proton Fit, Yield: %d", (int)p_tot),"l");
+  legend->AddEntry(n,Form("Neutron Fit, Yield: %d", (int)n_tot),"l");
+  legend->AddEntry(totalfit,"Total Fit","l");
   legend->Draw();
+  
+  c1->Write();
 
   //Write to console
   cout << endl << endl;
-  cout << "GMn ~ sqrt(n_tot/(p_tot/3)) = " << sqrt(n_tot/(p_tot/3)) << " (neutron cross section is roughly 1/3 proton cross section)." << endl;
+  cout << "GMn ~ sqrt(n_tot/(p_tot/3)) including blinding is VERY roughly = " << sqrt(n_tot/(p_tot/3)) << " (neutron cross section is roughly 1/3 proton cross section)." << endl;
 
   //Write out diagnostic histos, print to console, cleanup
   c1->Write();

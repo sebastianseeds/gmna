@@ -1,4 +1,4 @@
-//SSeeds 11.30.22 - Post-production - Code to parse several runs back by making cuts on elastics and produce a single root file for further analysis. Configured to read in many settings of SBS and write HCAL-projected x and y to tree. 
+//SSeeds 12.20.22 - Post-production - Code to parse several runs back by making cuts on elastics and produce a single root file for further analysis. Configured to read in many settings of SBS and write HCAL-projected x and y to tree. 
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -93,7 +93,7 @@ vector<Double_t> getDBParam( string file="", string param="", Int_t skip_lines =
   return vec;
 }
 
-void pelas( Int_t kine=-1, const char *tar="", Int_t mag=-1 ){
+void elastic_parsing( Int_t kine=-1, const char *tar="", Int_t mag=-1 ){
   
   // Define a clock to check macro processing time
   TStopwatch *st = new TStopwatch();
@@ -118,7 +118,7 @@ void pelas( Int_t kine=-1, const char *tar="", Int_t mag=-1 ){
 
   // Declare output file
   const char *output_prefix = gSystem->Getenv("PARSE_OUTPUT_DIR");
-  TString outputfilename = Form("%s/gmn_parsed_SBS%d_%s_%d_%s.root", output_prefix, kine, tar, mag, date.c_str() );
+  TString outputfilename = Form("%s/gmnFullParse_SBS%d_%s_%d_%s.root", output_prefix, kine, tar, mag, date.c_str() );
 
   // Declare general physics parameters to be modified by input config file
   Double_t E_e = -1.; // Energy of beam (incoming electrons from accelerator)
