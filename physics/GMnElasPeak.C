@@ -84,22 +84,22 @@ void GMnElasPeak( Double_t E_beam, Double_t BB_angle, Double_t BB_distance, Doub
 
   cout << endl;
 
-  cout << "///////////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
-  cout << "//   BBSh col  |  e' angle   |  e' p      |  elas proton KE  |  elas neutron KE |  had proj ang  |  on hcal? //" << endl;
+  cout << "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
+  cout << "//   BBSh col  |  e' angle   |  e' p      |  elas proton KE  |  elas neutron KE |  had proj ang  |  on hcal? | p epsilon | n epsilon //" << endl;
 
   for(int shcol=0; shcol<7; shcol++){
     
     //bool hcalON = hcal_p_projang[shcol]>hcal_minang&&hcal_p_projang[shcol]<hcal_maxang;
 
-    cout << "//___________________________________________________________________________________________________________//" << endl;
+    cout << "//___________________________________________________________________________________________________________________________________//" << endl;
 
     std::cout << std::setprecision(5) << std::fixed;
 
-    cout << "//   " << shcol <<  "         |  " << effective_BBang[shcol]*(180./TMath::Pi())  << "   |  " << elasPeak_e[shcol]  << "   |  " << nu_p[shcol]  << "         |  " << nu_n[shcol] << "         |  " << hcal_p_projang[shcol]*(180./TMath::Pi()) << "      |  " << hcalON[shcol] << "        //" << endl; 
+    cout << "//   " << shcol <<  "         |  " << effective_BBang[shcol]*(180./TMath::Pi())  << "   |  " << elasPeak_e[shcol]  << "   |  " << nu_p[shcol]  << "         |  " << nu_n[shcol] << "         |  " << hcal_p_projang[shcol]*(180./TMath::Pi()) << "      |  " << hcalON[shcol] << "        |  " << epsilon_p[shcol] << "  |  " << epsilon_n[shcol] << "  //" << endl; 
 
   }
 
-  cout << "///////////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
+  cout << "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << endl;
 
   Double_t hcal_ms = hcal_minKE*hcal_sampfrac*1000.; //convert from GeV to MeV
 

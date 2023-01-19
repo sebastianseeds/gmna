@@ -113,7 +113,7 @@ double Tfit(double *x, double *par){
   return BGfit(x,&par[0])+Pfit(x,&par[3])+Nfit(x,&par[6]);
 }
 
-void exgmn( const char *configfilename="setup_extract_gmn_SBS9.cfg", const char *outputfilename="outfiles/gmn_out.root" ){
+void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char *outputfilename="outfiles/gmn_out.root" ){
   
   // Define a clock to check macro processing time
   TStopwatch *st = new TStopwatch();
@@ -531,6 +531,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS9.cfg", const char 
       TVector3 HCAL_yaxis = HCAL_zaxis.Cross(HCAL_xaxis).Unit();
       
       TVector3 HCAL_origin = HCal_d * HCAL_zaxis + hcalheight * HCAL_xaxis;
+      //TVector3 HCAL_origin = HCal_d * HCAL_zaxis + HCAL_xaxis;
       
       //Define intersection points for hadron vector
       double sintersect = ( HCAL_origin - vertex ).Dot( HCAL_zaxis ) / (pNhat.Dot( HCAL_zaxis ) );
