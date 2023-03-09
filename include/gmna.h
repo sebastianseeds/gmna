@@ -2,6 +2,10 @@
 #define GMNA_H
 
 //////////////////////////////
+//Experiments
+const Int_t nkine = 6;
+
+//////////////////////////////
 ////Static Detector Parameters
 //Tracks
 const Int_t maxTracks = 1000; // Reasonable limit on tracks to be stored per event
@@ -13,10 +17,11 @@ const Int_t maxHCalChan = 288; // Total HCal channels
 const Int_t maxHCalRows = 24; // Total HCal rows
 const Int_t maxHCalCols = 12; // Total HCal cols
 const Int_t maxClusters = 10; // Total HCal clusters with information saved
-const Double_t HCALHeight = 0.365; // Height of HCal above beamline in m
+//const Double_t HCALHeight = 0.365; // Height of HCal above beamline in m
+const Double_t HCALHeight = -0.2897; // Height of HCal above beamline in m
 const Double_t HCalblk_l = 0.15; // Width and height of HCAL blocks in m
-const Double_t HCalblk_l_h_MC = 0.15494; // Width and height of all HCAL blocks in m from MC database
-const Double_t HCalblk_l_v_MC = 0.15875; // Width and height of all HCAL blocks in m from MC database
+const Double_t HCalblk_l_h_MC = 0.15494; // Horizontal length of all HCAL blocks in m from MC database
+const Double_t HCalblk_l_v_MC = 0.15875; // Vertical length of all HCAL blocks in m from MC database
 //const Double_t posHCalXi = -2.20; // Distance from beam center to top of HCal in m
 //const Double_t posHCalXf = 1.47; // Distance from beam center to bottom of HCal in m
 //const Double_t posHCalYi = -0.853; // Distance from beam center to opposite-beam side of HCal in m

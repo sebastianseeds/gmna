@@ -1,0 +1,23 @@
+HCal detection efficiency report for SBS8 LH2 data at 0 percent field
+
+Total elastics detected in HCal: 461687
+
+Total elastics detected in Bigbite with e-arm cuts only: 571526
+
+Total elastics detected in HCal (alt): 466460
+
+Total elastics detected in Bigbite with e-arm cuts only (alt): 425242
+
+Total entries in W2 plot: 1.68073e+06
+
+==============================================================
+Total HCal elastic detection efficiency: 0.807815 +/- 0.000521192
+==============================================================
+===================================================================
+Total HCal elastic detection efficiency (alt): 1.09693 +/- -nan
+===================================================================
+
+===================================================================
+Total HCal elastic detection efficiency (alt2): 2.48183 +/- -nan
+===================================================================
+

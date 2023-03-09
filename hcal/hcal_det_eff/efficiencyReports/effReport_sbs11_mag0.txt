@@ -1,0 +1,9 @@
+HCal detection efficiency report for SBS11 LH2 data at 0 percent field
+
+Total elastics detected in Bigbite with e-arm cuts only: 88.1449
+
+Total entries in W2 plot: 1392
+
+==============================================================
+Total HCal elastic detection efficiency: 17.8815 +/- -nan
+==============================================================

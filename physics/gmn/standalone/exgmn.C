@@ -88,6 +88,15 @@ double BGfit(double *x, double *par){
 */
 // Polynomial fit to background
 
+// double BGfit(double *x, double *par){
+//   double yint = par[0];
+//   double p1 = par[1];
+//   double p2 = par[2];
+//   double p3 = par[3];
+//   double p4 = par[4];
+//   return yint+p1*x[0]+p2*pow(x[0],2)+p3*pow(x[0],3)+p4*pow(x[0],4);
+// }
+
 double BGfit(double *x, double *par){
   double yint = par[0];
   double p1 = par[1];
@@ -113,7 +122,7 @@ double Tfit(double *x, double *par){
   return BGfit(x,&par[0])+Pfit(x,&par[3])+Nfit(x,&par[6]);
 }
 
-void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char *outputfilename="outfiles/gmn_out.root" ){
+void exgmn( const char *configfilename="setup_extract_gmn_SBS9.cfg", const char *outputfilename="outfiles/gmn_out_digi9.root" ){ //main
   
   // Define a clock to check macro processing time
   TStopwatch *st = new TStopwatch();
@@ -123,7 +132,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
   string date = getDate();
   
   // Declare Chain for many root files
-  TChain *C = new TChain("R");
+  TChain *C = new TChain("T");
 
   // Declare general physics parameters to be modified by input config file
   int kine = -1000; // Keep track of kinematic being analyzed
@@ -296,7 +305,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
 
   cout << "Event list populated with cut placed on elastics." << endl;
 
-  // Declare general tree parameters
+  // Declare general tree parameters bb.tr.p
   double BBtr_p[maxTracks], BBtr_px[maxTracks], BBtr_py[maxTracks], BBtr_pz[maxTracks];
   double BBtr_vx[maxTracks], BBtr_vy[maxTracks], BBtr_vz[maxTracks], BBtr_chi2[maxTracks];
   double BBfp_x[maxTracks], BBfp_y[maxTracks], BBfp_th[maxTracks], BBfp_ph[maxTracks];
@@ -306,7 +315,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
   double TDCT_id[maxTdcChan], TDCT_tdc[maxTdcChan]; 
   int TDCTndata;
 
-  double HCALx, HCALy, HCALe;
+  double HCALx, HCALy, HCALe, ekineW2;
 
   // Declare root tree variables and set values to memory locations in root file
   // Switch them on
@@ -344,6 +353,8 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
   C->SetBranchStatus( "bb.tdctrig.tdc", 1 );
   C->SetBranchStatus( "bb.tdctrig.tdcelemID", 1 );
   C->SetBranchStatus( "Ndata.bb.tdctrig.tdcelemID", 1 );
+  // Other
+  C->SetBranchStatus( "e.kine.W2", 1 );
 
   // Set the variables
   // HCal
@@ -379,6 +390,9 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
   C->SetBranchAddress( "bb.tdctrig.tdcelemID", TDCT_id );
   C->SetBranchAddress( "bb.tdctrig.tdc", TDCT_tdc );
   C->SetBranchAddress( "Ndata.bb.tdctrig.tdcelemID", &TDCTndata );  
+  // Others
+  C->SetBranchAddress( "e.kine.W2", &ekineW2 );
+
 
   cout << "Tree variables linked." << endl;
 
@@ -420,7 +434,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
   hE_pp->GetXaxis()->SetTitle( "GeV" );
   TH1D *hKE_p = new TH1D( "Scattered Proton Kinetic Energy", "KE_pp", 500, 0.0, E_e*1.5 );
   hKE_p->GetXaxis()->SetTitle( "GeV" );
-  TH1D *hdx_HCAL = new TH1D("hdx_HCAL","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
+  TH1D *hdx_HCAL = new TH1D("hdx_HCAL","; x_{HCAL} - x_{exp} (m)", 250, -dxlim_l,dxlim_u);
   TH1D *hdx_HCAL_cut = new TH1D("hdx_HCAL_cut","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
   TH1D *hdx_HCAL_wcut = new TH1D("hdx_HCAL_wcut","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
   TH1D *hdx_HCAL_fcut = new TH1D("hdx_HCAL_fcut","; x_{HCAL} - x_{exp} (m);", 250, -dxlim_l,dxlim_u);
@@ -531,17 +545,19 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
       TVector3 HCAL_yaxis = HCAL_zaxis.Cross(HCAL_xaxis).Unit();
       
       TVector3 HCAL_origin = HCal_d * HCAL_zaxis + hcalheight * HCAL_xaxis;
-      //TVector3 HCAL_origin = HCal_d * HCAL_zaxis + HCAL_xaxis;
+      //TVector3 HCAL_origin = HCal_d * HCAL_zaxis + hcalheight * HCAL_xaxis + hcalhoff * HCAL_yaxis; //TODO: check and add hcalhoff
       
       //Define intersection points for hadron vector
       double sintersect = ( HCAL_origin - vertex ).Dot( HCAL_zaxis ) / (pNhat.Dot( HCAL_zaxis ) );
-      
+
       TVector3 HCAL_intersect = vertex + sintersect * pNhat;
       
       //Define the expected position of hadron on HCal from BB track
       double yexpect_HCAL = (HCAL_intersect - HCAL_origin).Dot( HCAL_yaxis );
       double xexpect_HCAL = (HCAL_intersect - HCAL_origin).Dot( HCAL_xaxis );
       
+      //cout << yexpect_HCAL << endl;
+
       double E_ep = sqrt( pow(M_e,2) + pow(BBtr_p[0],2) ); // Obtain the scattered electron energy
       hE_ep->Fill( E_ep );
       
@@ -552,6 +568,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
       
       //Get invarient mass transfer W from the four-momentum of the scattered nucleon
       double W = PgammaN.M();
+      double W2 = ekineW2;
       hW->Fill( W );
       
       //Use the electron kinematics to predict the proton momentum assuming elastic scattering on free proton at rest (will need to correct for fermi motion):
@@ -839,7 +856,7 @@ void exgmn( const char *configfilename="setup_extract_gmn_SBS4.cfg", const char 
   // Send time efficiency report to console
   cout << "CPU time elapsed = " << st->CpuTime() << " s = " << st->CpuTime()/60.0 << " min. Real time = " << st->RealTime() << " s = " << st->RealTime()/60.0 << " min." << endl;
 
-}
+}//end main
 
 //Sample setup file, comment with #
 ////////////////////////////////////////////////////////
